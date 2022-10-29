@@ -19,20 +19,20 @@ def requester_dict_validator(data):
         raise Exception("Date Time is mandatory.")
     if str(data.get("is_flexible")).upper() not in allowed_flags:
         raise Exception(f"Allowed Flexible Flag are - {allowed_flags}")
-    if str(data["asset_type"]).upper() not in allowed_asset_type:
+    if data["asset_type"].upper() not in allowed_asset_type:
         raise Exception(f"Allowed Asset Types are - {allowed_asset_type}")
-    if str(data.get("asset_sensitivity")).upper() not in allowed_asset_sensitivity:
+    if data.get("asset_sensitivity").upper() not in allowed_asset_sensitivity:
         raise Exception(f"Allowed Asset Sensitivities are - {allowed_asset_sensitivity}")
     try:
-        data["date_time"] = datetime.strftime(data["date_time"], "%Y-%m-%d %H:%M:%S")
+        data["date_time"] = datetime.strptime(data["date_time"], "%Y-%m-%d %H:%M:%S")
     except:
-        raise Exception("Please enter valid date format")
+        raise Exception("Please enter valid date time format")
     try:
         data["no_of_assets"] = int(data["no_of_assets"])
         if data["no_of_assets"] < 1:
             raise Exception("Number of assets cannot be zero or negative")
     except:
-        raise Exception("Please enter valid integer for number of assets")  
+        raise Exception("Please enter valid Integer for number of assets")  
     return data
 
 def rider_dict_validator(data):
@@ -46,12 +46,12 @@ def rider_dict_validator(data):
         raise Exception("Date Time is mandatory.")
     if not data.get("travel_medium"):
         raise Exception("Travel Medium is mandatory.")
-    if str(data["travel_medium"]).upper not in allowed_travel_mediums:
+    if data["travel_medium"].upper() not in allowed_travel_mediums:
         raise Exception(f"Allowed Travel Medium are - {allowed_travel_mediums}")
     if str(data.get("is_flexible")).upper() not in allowed_flags:
         raise Exception(f"Allowed Flexible Flag are - {allowed_flags}")
     try:
-        data["date_time"] = datetime.strftime(data["date_time"], "%Y-%m-%d %H:%M:%S")
+        data["date_time"] = datetime.strptime(data["date_time"], "%Y-%m-%d %H:%M:%S")
     except:
         raise Exception("Please enter valid date format")
     try:
@@ -64,9 +64,9 @@ def rider_dict_validator(data):
 
 
 def requester_get_dict_validator(status, asset_type):
-    if status not in allowed_requester_status:
+    if status and status.upper() not in allowed_requester_status:
         raise Exception(f"Valid Status are - {allowed_requester_status}")
-    if asset_type not in allowed_asset_type:
+    if asset_type and asset_type.upper() not in allowed_asset_type:
         raise Exception(f"Allowed Asset Types are - {allowed_asset_type}")
 
 def matching_rider_validator(data):
@@ -74,18 +74,20 @@ def matching_rider_validator(data):
         raise Exception("From location is mandatory.")
     if not data.get("to_location"):
         raise Exception("To location is mandatory.")
-    # if str(data.get("is_flexible")).upper() not in allowed_flags:
-    #     raise Exception(f"Allowed Flexible Flag are - {allowed_flags}")
     if not data.get("date"):
         raise Exception("Date is mandatory.")
     try:
-        data["date"] = datetime.strftime(data["date_time"], "%Y-%m-%d")
+        date_time = datetime.strptime(data["date"], "%Y-%m-%d %H:%M:%S")
+        data['date'] = date_time.date()
     except:
         raise Exception("Please enter valid date format")
+    return data
     
 def applied_rider_validator(data):
-    if not data.get("id"):
-        raise Exception(f"ID is mandatory.")
+    if not data.get("rider_id"):
+        raise Exception(f"Rider ID is mandatory.")
+    if not data.get("requester_id"):
+        raise Exception(f"Requester ID is mandatory.")
 
 def response_structure(code=200, message="Success", details=""):
     return {"code": code, "message": message, "details": details}

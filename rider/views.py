@@ -1,9 +1,9 @@
 # from django.shortcuts import render
 from datetime import datetime
 import pytz
-from validations import response_structure, requester_dict_validator, requester_get_dict_validator, rider_dict_validator, matching_rider_validator, applied_rider_validator
-from rider.models import Requester, Rider
-from serializers import RequesterDataSerializer
+from rider.validations import response_structure, requester_dict_validator, requester_get_dict_validator, rider_dict_validator, matching_rider_validator, applied_rider_validator
+from rider.models import Requester, Rider, RequesterRiderMapper
+from rider.serializers import RequesterDataSerializer, RiderDataSerializer
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -29,11 +29,11 @@ class RequesterClass(APIView):
             asset_type = request.GET.get("asset_type")
             requester_get_dict_validator(status,asset_type)
             Requester.objects.filter(date_time__lt=datetime.now(tz=pytz.timezone("Asia/Calcutta"))).update(status="EXPIRED")
-            requester_obj = Requester.objects.all()
+            requester_obj = Requester.objects.all().order_by("-date_time")
             if status:
-                requester_obj.filter(status=status)
+                requester_obj = requester_obj.filter(status=status.upper())
             if asset_type:
-                requester_obj.filter(asset_type=asset_type)
+                requester_obj = requester_obj.filter(asset_type=asset_type.upper())
             paginator = PageNumberPagination()
             paginator.page_size = 25
             details = paginator.paginate_queryset(requester_obj, request)
@@ -86,18 +86,29 @@ def create_rider_entry(data):
     )
 
 @api_view(["GET"])
-def get_matching_rider(request): #write this code
+def get_matching_rider(request):
     try:
-        input_data = request.data
-        if not input_data:
-                response = response_structure(code=300, message='Failed', details='Please Enter Valid Data')
-                return Response(response)
+        input_data = dict(
+            from_location = request.GET.get('from_location'),
+            to_location = request.GET.get('to_location'),
+            date = request.GET.get('date')
+        )
         data = matching_rider_validator(input_data)
-        create_rider(data)
-        response = response_structure()
-        return Response(response) 
+        requester_obj = Rider.objects.filter(from_location=data['from_location'],
+                                            to_location=data['to_location'],
+                                            date_time__date=data['date']).order_by("-date_time")
+        paginator = PageNumberPagination()
+        paginator.page_size = 25
+        details = paginator.paginate_queryset(requester_obj, request)
+        return paginator.get_paginated_response(
+            {
+                "code": 200,
+                "data": RiderDataSerializer(details, many=True).data
+            }
+        )
     except Exception as e:
         return Response(response_structure(code=300, message='Failed', details=str(e)))
+
 
 @api_view(["PUT"])
 def rider_applied(request): #write this code
@@ -107,7 +118,8 @@ def rider_applied(request): #write this code
                 response = response_structure(code=300, message='Failed', details='Please Enter Valid Data')
                 return Response(response)
         applied_rider_validator(input_data)
-        r_obj = Rider.objects.filter(id=input_data['id']).update(is_applied=True, status='APPLIED')
+        r_obj = Rider.objects.filter(id=input_data['rider_id']).update(is_applied=True, status='APPLIED')
+        RequesterRiderMapper.objects.create(rider_id=input_data['rider_id'], requester_id=input_data['requester_id'])
         if not r_obj:
             raise Exception(F"No Valid Data Found WITH this ID - {input_data['id']}")
         response = response_structure()

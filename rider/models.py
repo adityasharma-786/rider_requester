@@ -23,3 +23,8 @@ class Rider(models.Model):
     is_applied = models.BooleanField(default=False)
     status = models.CharField(max_length=255, null=False, default='NOT_APPLIED')
 
+class RequesterRiderMapper(models.Model):
+    requester_id =  models.IntegerField()
+    rider_id =  models.IntegerField()
+    is_invalid = models.BooleanField(default=False)
+
