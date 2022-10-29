@@ -1,0 +1,5 @@
+allowed_flags = ["TRUE", "FALSE"]
+allowed_asset_type = ["LAPTOP", "TRAVEL_BAG", "PACKAGE"]
+allowed_asset_sensitivity = ["HIGHLY_SENSITIVE", "SENSITIVE", "NORMAL"]
+allowed_requester_status = ["PENDING", "COMPLETE", "EXPIRED"]
+allowed_travel_mediums = ["BUS", "CAR", "TRAIN"]
